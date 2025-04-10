@@ -11,10 +11,10 @@ export const getTasks = (req: Request, res: Response, next: NextFunction) => {
 
 export const createTask = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { title, description } = req.body
+    const { title } = req.body
     const id = Date.now().toString()
 
-    const newTask: Task = { id, title, description }
+    const newTask: Task = { id, title }
 
     tasks.push(newTask)
     res.status(201).json(newTask)
@@ -26,14 +26,14 @@ export const createTask = (req: Request, res: Response, next: NextFunction) => {
 export const updateTask = (req: Request, res: Response, next: NextFunction): any => {
   try {
     const id = req.params.id
-    const { title, description } = req.body
+    const { title } = req.body
     const taskIndex = tasks.findIndex((t) => t.id === id)
 
     if (taskIndex === -1) {
       return res.status(404).json({ message: "Task not found" })
     }
 
-    tasks[taskIndex] = { id, title, description }
+    tasks[taskIndex] = { id, title }
     res.json(tasks[taskIndex])
   } catch (error) {
     next(error)
