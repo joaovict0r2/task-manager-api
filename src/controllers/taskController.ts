@@ -1,58 +1,81 @@
-import { Request, RequestHandler, Response, NextFunction } from "express";
-import { tasks, Task } from "../models/task";
+import { Request, Response, NextFunction } from "express";
+import supabase from "../config/supabase";
+import { CreateTaskDTO, UpdateTaskDTO } from "../models/task";
 
-export const getTasks = (req: Request, res: Response, next: NextFunction) => {
+export const getTasks = async (req: Request, res: Response) => {
   try {
-    res.json(tasks)
-  } catch (error) {
-    next(error)
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+    
+    if (error) throw error;
+
+    res.status(200).json(data)
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
   }
 }
 
-export const createTask = (req: Request, res: Response, next: NextFunction) => {
+export const createTask = async (req: Request, res: Response) => {
   try {
-    const { title } = req.body
-    const id = Date.now().toString()
-
-    const newTask: Task = { id, title }
-
-    tasks.push(newTask)
-    res.status(201).json(newTask)
-  } catch (error) {
-    next(error)
-  }
-}
-
-export const updateTask = (req: Request, res: Response, next: NextFunction): any => {
-  try {
-    const id = req.params.id
-    const { title } = req.body
-    const taskIndex = tasks.findIndex((t) => t.id === id)
-
-    if (taskIndex === -1) {
-      return res.status(404).json({ message: "Task not found" })
+    const { title }: CreateTaskDTO = req.body
+    
+    if (!title) {
+      res.status(400).json({ error: 'Title is required' })
+      return
     }
 
-    tasks[taskIndex] = { id, title }
-    res.json(tasks[taskIndex])
-  } catch (error) {
-    next(error)
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert([{ title }])
+      .select()
+
+    if (error) throw error
+
+    res.status(201).json(data[0])
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
   }
 }
 
-export const deleteTask = (req: Request, res: Response, next: NextFunction): any => {
+export const updateTask = async (req: Request, res: Response) => {
   try {
-    const id = req.params.id
-    const taskIndex = tasks.findIndex((t) => t.id === id)
+    const { id } = req.params
+    const { title }: UpdateTaskDTO = req.body
+    
+    const { data, error } = await supabase 
+      .from('tasks')
+      .update({ title })
+      .eq('id', id)
+      .select()
 
-    if (taskIndex === -1) {
-      return res.status(404).json({ message: "Task not found" })
+    if (error) throw error
+
+    if (data.length === 0) {
+      res.status(404).json({ error: "Task not found" })
+      return
     }
 
-    const deletedTask = tasks.splice(taskIndex, 1)[0]
-    res.json(deletedTask)
-  } catch (error) {
-    next(error)
+    res.status(200).json(data[0])
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export const deleteTask = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params
+
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+
+    res.status(200).json({ message: "Task deleted successfully" })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
   }
 }
 
